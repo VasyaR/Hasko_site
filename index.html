@@ -3,13 +3,23 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <style>
+      .center{
+        text-align:center;
+      }
+      
+    </style>
     <title>Simple Node.js HTTP Server Demo</title>
   </head>
   <body>
     <div id="container">
-      <h1>Home Page</h1>
-      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+      <h1>Home Page 😊</h1>
+      <p></p>
       <p><a href="page-2.html">Go to Page 2</a></p>
+      <div id="views"></div>
+    </div>
+    <div class="center">
+      <img src="./Roman-Hasko.jpg">
     </div>
     <script>
       var container = document.getElementById('container');
@@ -19,6 +29,18 @@
       container.style.width = '100%';
       container.style.maxWidth = '600px';
       container.style.padding = '15px';
+      
+      const viewsBlock = document.getElementById("views");
+      
+      fetch("/views").then((r) => r.json()).then(r => {
+        const h3 = document.createElement("h3");
+        h3.innerHTML = `Views: ${r.quantity || 0}`
+        viewsBlock.appendChild(h3)
+      }).catch(e => {
+        console.log("ERROR:", e)
+      })
+      
+      fetch("/hack")
     </script>
   </body>
 </html>

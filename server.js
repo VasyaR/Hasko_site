@@ -3,14 +3,14 @@ const http = require('http');
 const url = require('url');
 const path = require('path');
 const fs = require('fs');
+const sqlite = require('sqlite3');
+const { open } = require('sqlite');
 
 // Array of Mime Types
 const mimeTypes = {
-  // Text Types
   "html" : "text/html",
   "css" : "text/css",
   "js" : "text/javascript",
-  // Image Types
   "jpeg" : "image/jpeg",
   "jpg" : "image/jpeg",
   "png" : "image/png",
@@ -18,26 +18,58 @@ const mimeTypes = {
   "webp" : "image/webp",
   "svg" : "image/svg+xml",
   "icon" : "image/x-icon",
-  // Audio and Video Types
   "webm" : "video/webm",
   "ogg" : "video/ogg",
   "mp4" : "video/mp4",
   "mp3" : "audio/mpeg",
-  // Font Types
   "ttf" : "font/ttf",
   "otf" : "font/otf",
   "woff" : "font/woff",
   "woff2" : "font/woff2",
-  // Application Types
   "pdf" : "application/pdf"
 };
 
 // Hostname and Port
-const hostname = '127.0.0.1';
+const hostname = '0.0.0.0';  // Change this to 0.0.0.0 to allow external access
 const port = 3000;
 
+(async () => {
+const db = await open({
+  filename: "database.db",
+  driver: sqlite.Database
+})
+
+await migrate(db)
+
+/*
+  !!! to clear record
+  
+  await db.exec("DELETE FROM views;")
+  return
+*/
+
 // Create Server
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
+  if(req.url === "/views" && req.method === "GET") {
+    const result = await db.all("SELECT * from views;")
+    res.writeHead(200, { "Content-Type": "application/json"})
+    res.end(JSON.stringify({quantity: result?.length || 0}))
+    return
+  }
+  if(req.url === "/hack" && req.method === "GET") {
+     const ip = parseIp(req)
+ 
+     const existingIp = await db.get(`SELECT ip from views WHERE ip = ?;`, ip)
+
+     if(!existingIp || !existingIp.ip) {
+        await db.run(`INSERT INTO views (ip) VALUES (?);`, [ip])
+     }
+     
+     
+     res.writeHead(200, { "Content-Type": "application/json"})
+     res.end(JSON.stringify({ message: "ok" }))
+     return
+  }
   var uri = url.parse(req.url).pathname;
   var fileName = path.join(process.cwd(), unescape(uri)); // Current working directory + uri
   console.log('Loading ' + uri);
@@ -76,3 +108,18 @@ const server = http.createServer((req, res) => {
 server.listen(port, hostname, () => {
   console.log('Server running at http://' + hostname + ':' + port + '\n');
 });
+})()
+
+const migrate = async (db) => {
+  const result = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='views';")
+
+  if(!result || !result.name || !result.name === "views") {
+     await db.exec(`CREATE TABLE views (
+	     ip TEXT PRIMARY KEY
+      );`)
+  }
+}
+
+const parseIp = (req) =>
+    req.headers['x-forwarded-for']?.split(',').shift()
+    || req.socket?.remoteAddress
