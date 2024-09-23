@@ -33,10 +33,6 @@ const mimeTypes = {
 const hostname = '0.0.0.0';  // Change this to 0.0.0.0 to allow external access
 const PORT = process.env.PORT || 3000;  // Use the port Heroku gives us, or default to 3000 for local development
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
 (async () => {
 const db = await open({
   filename: "database.db",
@@ -109,8 +105,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 // Run Server
-server.listen(port, hostname, () => {
-  console.log('Server running at http://' + hostname + ':' + port + '\n');
+server.listen(PORT, hostname, () => {
+  console.log('Server running at http://' + hostname + ':' + PORT + '\n');
 });
 })()
 
